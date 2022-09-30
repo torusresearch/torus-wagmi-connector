@@ -1,18 +1,18 @@
 
 <p align="center">
- <img src="https://web3auth.io/images/w3a-L-Favicon-1.svg" align="center" alt="Ledger" />
- <h2 align="center">Web3Auth Wagmi Connector</h2>
- <p align="center"><a href="https://github.com/tmm/wagmi">Wagmi</a> Connector for Web3Auth</p>
+ <img src="https://web3auth.io/images/torus-icon-blue-3.svg" align="center" alt="Ledger" />
+ <h2 align="center">Torus Wagmi Connector</h2>
+ <p align="center"><a href="https://github.com/tmm/wagmi">Wagmi</a> Connector for Torus Wallet</p>
 </p>
 
 
 
 # About
 
-`@web3auth/web3auth-wagmi-connector` is a connector for the popular [wagmi](https://github.com/tmm/wagmi) library built on top of the [@web3auth/web3auth
-](https://github.com/web3auth/web3auth).
+`@toruslabs/torus-wagmi-connector` is a connector for the popular [wagmi](https://github.com/tmm/wagmi) library built on top of the [@toruslabs/torus-embed
+](https://github.com/torusresearch/torus-embed).
 
-It can be used to initialize a [wagmi client](https://wagmi.sh/docs/client) that will seemlessly manage the interaction of your DApp with Web3Auth.
+It can be used to initialize a [wagmi client](https://wagmi.sh/docs/client) that will seemlessly manage the interaction of your DApp with Torus Wallet.
 
 ## How to use
 
