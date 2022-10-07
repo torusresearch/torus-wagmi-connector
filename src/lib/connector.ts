@@ -68,7 +68,7 @@ export class TorusConnector extends Connector {
       document.getElementById("torusIframe").style.zIndex = "9999999999";
       await this.torusInstance.login();
 
-      if (this.torusOptions.TorusParams?.showTorusButton) {
+      if (this.torusOptions.TorusParams?.showTorusButton !== false) {
         this.torusInstance.showTorusButton();
       }
 
