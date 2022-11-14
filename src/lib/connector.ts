@@ -77,11 +77,11 @@ export class TorusConnector extends Connector {
       // if there is a user logged in, return the user
       if (isLoggedIn) {
         const provider = await this.getProvider();
-
+        const chainId = await this.getChainId();
         return {
           provider,
           chain: {
-            id: 0,
+            id: chainId,
             unsupported: false,
           },
           account: await this.getAccount(),
@@ -91,8 +91,6 @@ export class TorusConnector extends Connector {
       // eslint-disable-next-line no-async-promise-executor
       return await new Promise(async (resolve, reject) => {
         if (this.provider.isConnected()) {
-          const signer = await this.getSigner();
-          const account = await signer.getAddress();
           const provider = await this.getProvider();
 
           if (provider.on) {
@@ -101,11 +99,16 @@ export class TorusConnector extends Connector {
             provider.on("disconnect", this.onDisconnect);
           }
 
+          const signer = await this.getSigner();
+          const account = await signer.getAddress();
+          const chainId = await this.getChainId();
+          const unsupported = await this.isChainUnsupported(chainId);
+
           return resolve({
             account,
             chain: {
-              id: 0,
-              unsupported: false,
+              id: chainId,
+              unsupported,
             },
             provider,
           });
@@ -121,24 +124,43 @@ export class TorusConnector extends Connector {
   }
 
   async getAccount(): Promise<string> {
-    const provider = new ethers.providers.Web3Provider(await this.getProvider());
-    const signer = provider.getSigner();
-    const account = await signer.getAddress();
-    return account;
+    try {
+      const provider = new ethers.providers.Web3Provider(await this.getProvider());
+      const signer = provider.getSigner();
+      const account = await signer.getAddress();
+      return account;
+    } catch (error) {
+      log.error("Error: Cannot get account:", error);
+      throw error;
+    }
   }
 
   async getProvider() {
-    if (this.provider) {
+    try {
+      if (this.provider) {
+        return this.provider;
+      }
+      this.provider = this.torusInstance.provider;
       return this.provider;
+    } catch (error) {
+      log.error("Error: Cannot get provider:", error);
+      throw error;
     }
-    this.provider = this.torusInstance.provider;
-    return this.provider;
   }
 
   async getSigner(): Promise<Signer> {
-    const provider = new ethers.providers.Web3Provider(await this.getProvider());
-    const signer = provider.getSigner();
-    return signer;
+    try {
+      const provider = new ethers.providers.Web3Provider(await this.getProvider());
+      const signer = provider.getSigner();
+      return signer;
+    } catch (error) {
+      log.error("Error: Cannot get signer:", error);
+      throw error;
+    }
+  }
+
+  isChainUnsupported(chainId: number) {
+    return !this.chains.some((x) => x.id === chainId);
   }
 
   async isAuthorized() {
@@ -156,7 +178,7 @@ export class TorusConnector extends Connector {
         return normalizeChainId(this.network.chainId);
       }
     } catch (error) {
-      log.error("error", error);
+      log.error("Error: Cannot get Chain Id from the network.", error);
       throw error;
     }
   }
@@ -168,13 +190,18 @@ export class TorusConnector extends Connector {
   }
 
   protected onAccountsChanged(accounts: string[]): void {
-    if (accounts.length === 0) this.emit("disconnect");
-    else this.emit("change", { account: getAddress(accounts[0]) });
+    if (accounts.length === 0) {
+      log.error("Error: onAccountsChanged: Received empty accounts array");
+      this.emit("disconnect");
+    } else this.emit("change", { account: getAddress(accounts[0]) });
   }
 
   protected onChainChanged(chainId: string | number): void {
     const id = normalizeChainId(chainId);
     const unsupported = this.isChainUnsupported(id);
+    if (unsupported) {
+      log.error("Error: onChainChanged: Received unsupported chain id:", id);
+    }
     this.emit("change", { chain: { id, unsupported } });
   }
 
