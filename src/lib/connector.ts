@@ -101,13 +101,13 @@ export class TorusConnector extends Connector {
 
           const signer = await this.getSigner();
           const account = await signer.getAddress();
-          const chainId = await this.getChainId();
-          const unsupported = await this.isChainUnsupported(chainId);
+          const id = await this.getChainId();
+          const unsupported = await this.isChainUnsupported(id);
 
           return resolve({
             account,
             chain: {
-              id: chainId,
+              id,
               unsupported,
             },
             provider,
@@ -159,10 +159,6 @@ export class TorusConnector extends Connector {
     }
   }
 
-  isChainUnsupported(chainId: number) {
-    return !this.chains.some((x) => x.id === chainId);
-  }
-
   async isAuthorized() {
     try {
       const account = await this.getAccount();
@@ -183,6 +179,21 @@ export class TorusConnector extends Connector {
     }
   }
 
+  async switchChain(chainId: number) {
+    try {
+      const chain = this.chains.find((x) => x.id === chainId);
+      await this.torusInstance.setProvider({
+        host: chain.name,
+        chainId,
+      });
+      this.provider = this.torusInstance.provider;
+      return chain;
+    } catch (error) {
+      log.error("Error: Cannot change chain", error);
+      throw error;
+    }
+  }
+
   async disconnect(): Promise<void> {
     await this.torusInstance.logout();
     this.torusInstance.hideTorusButton();
@@ -199,13 +210,14 @@ export class TorusConnector extends Connector {
   protected onChainChanged(chainId: string | number): void {
     const id = normalizeChainId(chainId);
     const unsupported = this.isChainUnsupported(id);
-    if (unsupported) {
-      log.error("Error: onChainChanged: Received unsupported chain id:", id);
-    }
     this.emit("change", { chain: { id, unsupported } });
   }
 
   protected onDisconnect(): void {
     this.emit("disconnect");
+  }
+
+  protected isChainUnsupported(chainId: number) {
+    return !this.chains.some((x) => x.id === chainId);
   }
 }
