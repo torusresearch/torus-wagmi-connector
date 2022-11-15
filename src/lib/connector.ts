@@ -40,18 +40,20 @@ export class TorusConnector extends Connector {
     });
 
     // set network according to chain details provided
-    const networkDetails = this.chains.filter((x) => x.id === chainId);
+    const chain = this.chains.find((x) => x.id === chainId);
 
-    if (networkDetails.length > 0) {
+    if (chain) {
       this.network = {
-        ...this.network,
         host,
         chainId,
-        networkName: networkDetails[0].name,
-        tickerName: networkDetails[0].nativeCurrency?.name,
-        ticker: networkDetails[0].nativeCurrency?.symbol,
-        blockExplorer: networkDetails[0]?.blockExplorers.default?.url,
+        networkName: chain.name,
+        tickerName: chain.nativeCurrency?.name,
+        ticker: chain.nativeCurrency?.symbol,
+        blockExplorer: chain.blockExplorers.default?.url,
       };
+    } else {
+      log.warn(`ChainId ${chainId} not found in chain list`);
+      this.emit("disconnect");
     }
   }
 
@@ -61,18 +63,20 @@ export class TorusConnector extends Connector {
         type: "connecting",
       });
 
-      // initialize torus embed
-      if (!this.torusInstance.isInitialized) {
-        await this.torusInstance.init({
-          ...this.torusOptions.TorusParams,
-          network: this.network,
-        });
-      } else if (this.torusOptions.TorusParams?.showTorusButton !== false) {
-        this.torusInstance.showTorusButton();
-      }
+      if (!this.provider) {
+        // initialize torus embed
+        if (!this.torusInstance.isInitialized) {
+          await this.torusInstance.init({
+            ...this.torusOptions.TorusParams,
+            network: this.network,
+          });
+        } else if (this.torusOptions.TorusParams?.showTorusButton !== false) {
+          this.torusInstance.showTorusButton();
+        }
 
-      document.getElementById("torusIframe").style.zIndex = "999999999999999999";
-      await this.torusInstance.login();
+        document.getElementById("torusIframe").style.zIndex = "999999999999999999";
+        await this.torusInstance.login();
+      }
 
       const isLoggedIn = await this.isAuthorized();
 
@@ -81,8 +85,8 @@ export class TorusConnector extends Connector {
         const provider = await this.getProvider();
 
         if (provider.on) {
-          provider.on("accountsChanged", this.onAccountsChanged.bind(this));
-          provider.on("chainChanged", this.onChainChanged.bind(this));
+          provider.on("accountsChanged", this.onAccountsChanged);
+          provider.on("chainChanged", this.onChainChanged);
         }
 
         const chainId = await this.getChainId();
@@ -173,6 +177,7 @@ export class TorusConnector extends Connector {
       await this.torusInstance.setProvider({
         host: chain.rpcUrls.default,
         chainId,
+        networkName: chain.name,
       });
       return chain;
     } catch (error) {
@@ -187,23 +192,23 @@ export class TorusConnector extends Connector {
     this.provider = null;
   }
 
-  protected onAccountsChanged(accounts: string[]): void {
-    if (accounts.length === 0) {
-      this.emit("disconnect");
-    } else this.emit("change", { account: getAddress(accounts[0]) });
-  }
-
   protected isChainUnsupported(chainId: number): boolean {
     return !this.chains.some((x) => x.id === chainId);
   }
 
-  protected onChainChanged(chainId: string | number): void {
+  protected onAccountsChanged = (accounts: string[]): void => {
+    if (accounts.length === 0) {
+      this.emit("disconnect");
+    } else this.emit("change", { account: getAddress(accounts[0]) });
+  };
+
+  protected onChainChanged = (chainId: string | number): void => {
     const id = normalizeChainId(chainId);
     const unsupported = this.isChainUnsupported(id);
     this.emit("change", { chain: { id, unsupported } });
-  }
+  };
 
-  protected onDisconnect(): void {
+  protected onDisconnect = (): void => {
     this.emit("disconnect");
-  }
+  };
 }

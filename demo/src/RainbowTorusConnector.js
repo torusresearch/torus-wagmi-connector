@@ -9,8 +9,8 @@ export const rainbowTorusConnector = ({ chains }) => ({
     const connector = new TorusConnector({
       chains: chains,
       options: {
-        chainId: "0x1",
-        host: "mainnet",
+        chainId: chains[0].chainId,
+        host: chains[0].host,
       },
     });
     return {

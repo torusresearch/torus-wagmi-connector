@@ -13,15 +13,10 @@ import {
 import { chain, createClient, WagmiConfig, configureChains } from "wagmi";
 import { rainbowTorusConnector } from "./RainbowTorusConnector";
 
-import { alchemyProvider } from 'wagmi/providers/alchemy';
-import { publicProvider } from 'wagmi/providers/public';
+import { publicProvider } from 'wagmi/providers/public'
 const { chains, provider } = configureChains(
-  [chain.mainnet, chain.polygon],
-  [
-    alchemyProvider({ apiKey: "7wSu45FYTMHUO4HJkHjQwX4HFkb7k9Ui"}),
-    alchemyProvider({ apiKey: "fGXusgBUDC-OPy6XI8IFRvu1i7sbWsYj"}),
-    publicProvider()
-  ]
+  [chain.mainnet, chain.polygon, chain.optimism, chain.arbitrum],
+  [publicProvider()],
 );
 const connectors = connectorsForWallets([
   {
