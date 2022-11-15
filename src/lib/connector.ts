@@ -148,9 +148,17 @@ export class TorusConnector extends Connector {
 
   async getChainId(): Promise<number> {
     try {
-      if (this.network.chainId) {
+      const provider = await this.getProvider();
+      if (!provider && this.network.chainId) {
         return normalizeChainId(this.network.chainId);
+      } else if (provider) {
+        const chainId = await provider.request({ method: "eth_chainId" });
+        if (chainId) {
+          return normalizeChainId(chainId as string);
+        }
       }
+
+      throw new Error("Chain ID is not defined");
     } catch (error) {
       log.error("Error: Cannot get Chain Id from the network.", error);
       throw error;
