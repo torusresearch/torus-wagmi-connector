@@ -87,11 +87,12 @@ export class TorusConnector extends Connector {
         }
 
         const chainId = await this.getChainId();
+
         return {
           provider,
           chain: {
             id: chainId,
-            unsupported: false,
+            unsupported: this.isChainUnsupported(chainId),
           },
           account: await this.getAccount(),
         };
@@ -140,7 +141,7 @@ export class TorusConnector extends Connector {
   async isAuthorized() {
     try {
       const account = await this.getAccount();
-      return !!(account && this.provider && this.provider.isConnected());
+      return !!(account && this.provider);
     } catch {
       return false;
     }
