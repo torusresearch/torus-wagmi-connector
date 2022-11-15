@@ -57,26 +57,35 @@ export class TorusConnector extends Connector {
 
   async connect(): Promise<Required<ConnectorData>> {
     try {
+      this.emit("message", {
+        type: "connecting",
+      });
+
       // initialize torus embed
       if (!this.torusInstance.isInitialized) {
         await this.torusInstance.init({
           ...this.torusOptions.TorusParams,
           network: this.network,
         });
-      }
-
-      document.getElementById("torusIframe").style.zIndex = "9999999999";
-      await this.torusInstance.login();
-
-      if (this.torusOptions.TorusParams?.showTorusButton !== false) {
+      } else if (this.torusOptions.TorusParams?.showTorusButton !== false) {
         this.torusInstance.showTorusButton();
       }
+
+      document.getElementById("torusIframe").style.zIndex = "999999999999999999";
+      await this.torusInstance.login();
 
       const isLoggedIn = await this.isAuthorized();
 
       // if there is a user logged in, return the user
       if (isLoggedIn) {
         const provider = await this.getProvider();
+
+        if (provider.on) {
+          provider.on("accountsChanged", this.onAccountsChanged.bind(this));
+          provider.on("chainChanged", this.onChainChanged.bind(this));
+          provider.on("disconnect", this.onDisconnect.bind(this));
+        }
+
         const chainId = await this.getChainId();
         return {
           provider,
@@ -87,37 +96,11 @@ export class TorusConnector extends Connector {
           account: await this.getAccount(),
         };
       }
-
-      // eslint-disable-next-line no-async-promise-executor
-      return await new Promise(async (resolve, reject) => {
-        if (this.provider.isConnected()) {
-          const provider = await this.getProvider();
-
-          if (provider.on) {
-            provider.on("accountsChanged", this.onAccountsChanged);
-            provider.on("chainChanged", this.onChainChanged);
-            provider.on("disconnect", this.onDisconnect);
-          }
-
-          const signer = await this.getSigner();
-          const account = await signer.getAddress();
-          const id = await this.getChainId();
-          const unsupported = await this.isChainUnsupported(id);
-
-          return resolve({
-            account,
-            chain: {
-              id,
-              unsupported,
-            },
-            provider,
-          });
-        }
-        log.error("error while connecting");
-        // eslint-disable-next-line prefer-promise-reject-errors
-        return reject("error");
-      });
+      throw new Error("Failed to login, Please try again");
     } catch (error) {
+      if (this.torusInstance.isInitialized) {
+        this.torusInstance.hideTorusButton();
+      }
       log.error("error while connecting", error);
       throw new UserRejectedRequestError("Something went wrong");
     }
@@ -136,16 +119,11 @@ export class TorusConnector extends Connector {
   }
 
   async getProvider() {
-    try {
-      if (this.provider) {
-        return this.provider;
-      }
-      this.provider = this.torusInstance.provider;
+    if (this.provider) {
       return this.provider;
-    } catch (error) {
-      log.error("Error: Cannot get provider:", error);
-      throw error;
     }
+    this.provider = this.torusInstance.provider;
+    return this.provider;
   }
 
   async getSigner(): Promise<Signer> {
@@ -162,7 +140,7 @@ export class TorusConnector extends Connector {
   async isAuthorized() {
     try {
       const account = await this.getAccount();
-      return !!(account && this.provider);
+      return !!(account && this.provider && this.provider.isConnected());
     } catch {
       return false;
     }
@@ -182,11 +160,12 @@ export class TorusConnector extends Connector {
   async switchChain(chainId: number) {
     try {
       const chain = this.chains.find((x) => x.id === chainId);
+      if (!chain) throw new Error(`Unsupported chainId: ${chainId}`);
+      if (!this.isAuthorized()) throw new Error("Please login first");
       await this.torusInstance.setProvider({
         host: chain.name,
         chainId,
       });
-      this.provider = this.torusInstance.provider;
       return chain;
     } catch (error) {
       log.error("Error: Cannot change chain", error);
@@ -202,9 +181,12 @@ export class TorusConnector extends Connector {
 
   protected onAccountsChanged(accounts: string[]): void {
     if (accounts.length === 0) {
-      log.error("Error: onAccountsChanged: Received empty accounts array");
       this.emit("disconnect");
     } else this.emit("change", { account: getAddress(accounts[0]) });
+  }
+
+  protected isChainUnsupported(chainId: number): boolean {
+    return !this.chains.some((x) => x.id === chainId);
   }
 
   protected onChainChanged(chainId: string | number): void {
@@ -215,9 +197,5 @@ export class TorusConnector extends Connector {
 
   protected onDisconnect(): void {
     this.emit("disconnect");
-  }
-
-  protected isChainUnsupported(chainId: number) {
-    return !this.chains.some((x) => x.id === chainId);
   }
 }
