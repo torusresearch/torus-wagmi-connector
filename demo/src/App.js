@@ -4,8 +4,12 @@ import {
   ConnectButton,
   connectorsForWallets,
   RainbowKitProvider,
-  wallet,
 } from "@rainbow-me/rainbowkit";
+import {
+  rainbowWallet,
+  metaMaskWallet,
+  walletConnectWallet,
+} from '@rainbow-me/rainbowkit/wallets';
 import { chain, createClient, WagmiConfig, configureChains } from "wagmi";
 import { rainbowTorusConnector } from "./RainbowTorusConnector";
 
@@ -23,9 +27,9 @@ const connectors = connectorsForWallets([
   {
     groupName: "Recommended",
     wallets: [
-      wallet.rainbow({ chains }),
-      wallet.walletConnect({ chains }),
-      wallet.metaMask({ chains }),
+      rainbowWallet({ chains }),
+      walletConnectWallet({ chains }),
+      metaMaskWallet({ chains }),
       rainbowTorusConnector({ chains }),
     ],
   },
