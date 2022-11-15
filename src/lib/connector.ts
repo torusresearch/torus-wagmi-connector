@@ -83,7 +83,6 @@ export class TorusConnector extends Connector {
         if (provider.on) {
           provider.on("accountsChanged", this.onAccountsChanged.bind(this));
           provider.on("chainChanged", this.onChainChanged.bind(this));
-          provider.on("disconnect", this.onDisconnect.bind(this));
         }
 
         const chainId = await this.getChainId();
@@ -172,7 +171,7 @@ export class TorusConnector extends Connector {
       if (!chain) throw new Error(`Unsupported chainId: ${chainId}`);
       if (!this.isAuthorized()) throw new Error("Please login first");
       await this.torusInstance.setProvider({
-        host: chain.name,
+        host: chain.rpcUrls.default,
         chainId,
       });
       return chain;
