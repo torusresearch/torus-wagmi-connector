@@ -1,22 +1,22 @@
 
 <p align="center">
- <img src="https://web3auth.io/images/w3a-L-Favicon-1.svg" align="center" alt="Ledger" />
- <h2 align="center">Web3Auth Wagmi Connector</h2>
- <p align="center"><a href="https://github.com/tmm/wagmi">Wagmi</a> Connector for Web3Auth</p>
+ <img src="https://web3auth.io/images/torus-icon-blue-3.svg" align="center" alt="Ledger" />
+ <h2 align="center">Torus Wagmi Connector</h2>
+ <p align="center"><a href="https://github.com/tmm/wagmi">Wagmi</a> Connector for Torus Wallet</p>
 </p>
 
 
 
 # About
 
-`@web3auth/web3auth-wagmi-connector` is a connector for the popular [wagmi](https://github.com/tmm/wagmi) library built on top of the [@web3auth/web3auth
-](https://github.com/web3auth/web3auth).
+`@toruslabs/torus-wagmi-connector` is a connector for the popular [wagmi](https://github.com/tmm/wagmi) library built on top of the [@toruslabs/torus-embed
+](https://github.com/torusresearch/torus-embed).
 
-It can be used to initialize a [wagmi client](https://wagmi.sh/docs/client) that will seemlessly manage the interaction of your DApp with Web3Auth.
+It can be used to initialize a [wagmi client](https://wagmi.sh/docs/client) that will seemlessly manage the interaction of your DApp with Torus Wallet.
 
 ## How to use
 
-Here is an example of a wagmi client using both the `Web3AuthConnector` and the default `InjectedConnector` respectively.
+Here is an example of a wagmi client using both the `TorusConnector` and the default `InjectedConnector` respectively.
 
 ```js
 import { Web3AuthConnector } from '@web3auth/web3auth-wagmi-connector';
@@ -32,13 +32,11 @@ const { chains, provider } = configureChains(
 const wagmiClient = createClient({
   autoConnect: true,
   connectors: [
-    new Web3AuthConnector({ 
-      chains,
+    new TorusConnector({ 
+      chains: chains,
       options: {
-        enableLogging: true,
-        clientId: "YOUR_CLIENT_ID", // Get your own client id from https://dashboard.web3auth.io
-        network: "testnet", // web3auth network
-        chainId: "0x1" // chainId that you want to connect with
+        chainId: "0x1",
+        host: "mainnet",
       },
     }),
     new InjectedConnector({ chains }),
