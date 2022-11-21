@@ -19,7 +19,7 @@ It can be used to initialize a [wagmi client](https://wagmi.sh/docs/client) that
 Here is an example of a wagmi client using both the `TorusConnector` and the default `InjectedConnector` respectively.
 
 ```js
-import { Web3AuthConnector } from '@web3auth/web3auth-wagmi-connector';
+import { TorusConnector } from "@toruslabs/torus-wagmi-connector";
 import { chain, configureChains, createClient } from 'wagmi';
 import { InjectedConnector } from 'wagmi/connectors/injected';
 import { publicProvider } from 'wagmi/providers/public';
