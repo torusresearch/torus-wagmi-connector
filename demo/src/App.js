@@ -6,37 +6,35 @@ import {
   RainbowKitProvider,
 } from "@rainbow-me/rainbowkit";
 import {
-  rainbowWallet,
-  metaMaskWallet,
-  walletConnectWallet,
+  injectedWallet,
 } from '@rainbow-me/rainbowkit/wallets';
-import { chain, createClient, WagmiConfig, configureChains } from "wagmi";
+import { createConfig, WagmiConfig, configureChains } from "wagmi";
 import { rainbowTorusConnector } from "./RainbowTorusConnector";
+import { mainnet, polygon, optimism, arbitrum } from 'wagmi/chains';
 
 import { publicProvider } from 'wagmi/providers/public'
-const { chains, provider } = configureChains(
-  [chain.mainnet, chain.polygon, chain.optimism, chain.arbitrum],
+const { chains, publicClient } = configureChains(
+  [mainnet, polygon, optimism, arbitrum],
   [publicProvider()],
 );
 const connectors = connectorsForWallets([
   {
     groupName: "Recommended",
     wallets: [
-      rainbowWallet({ chains }),
-      walletConnectWallet({ chains }),
-      metaMaskWallet({ chains }),
+      injectedWallet({ chains }),
       rainbowTorusConnector({ chains }),
     ],
   },
 ]);
-const wagmiClient = createClient({
+const wagmiConfig = createConfig({
+  autoConnect: true,
   connectors,
-  provider,
+  publicClient,
 });
 
 export default function App() {
   return (
-    <WagmiConfig client={wagmiClient}>
+    <WagmiConfig config={wagmiConfig}>
       <RainbowKitProvider chains={chains}>
         <div
           style={{

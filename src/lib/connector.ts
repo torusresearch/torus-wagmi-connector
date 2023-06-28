@@ -1,12 +1,17 @@
 import Torus, { TorusInpageProvider } from "@toruslabs/torus-embed";
-import { Chain, Connector, ConnectorData, normalizeChainId, UserRejectedRequestError } from "@wagmi/core";
-import { ethers, Signer } from "ethers";
-import { getAddress } from "ethers/lib/utils";
+import { Address, Chain, Connector, ConnectorData, WalletClient } from "@wagmi/core";
 import log from "loglevel";
+import { createWalletClient, custom, getAddress, SwitchChainError, UserRejectedRequestError } from "viem";
 
 import { Options } from "./interfaces";
 
 const IS_SERVER = typeof window === "undefined";
+
+function normalizeChainId(chainId: string | number | bigint) {
+  if (typeof chainId === "string") return Number.parseInt(chainId, chainId.trim().substring(0, 2) === "0x" ? 16 : 10);
+  if (typeof chainId === "bigint") return Number(chainId.toString(10));
+  return chainId;
+}
 
 export class TorusConnector extends Connector {
   ready = !IS_SERVER;
@@ -15,28 +20,31 @@ export class TorusConnector extends Connector {
 
   readonly name = "torus";
 
-  provider: TorusInpageProvider;
+  protected provider: TorusInpageProvider;
 
-  torusInstance?: Torus;
+  private torusInstance?: Torus;
 
-  torusOptions: Options;
+  private torusOptions: Options;
 
-  network = {
-    host: "mainnet",
-    chainId: 1,
-    networkName: "Ethereum Mainnet",
-    blockExplorer: "https://etherscan.io",
-    ticker: "ETH",
-    tickerName: "Ethereum",
+  private network: {
+    host: string;
+    chainId: number;
+    networkName: string;
+    tickerName: string;
+    ticker: string;
+    blockExplorer: string;
   };
 
-  constructor(config: { chains?: Chain[]; options: Options }) {
-    super(config);
-    this.torusOptions = config.options;
-    const chainId = config.options.chainId ? config.options.chainId : 1;
-    const host = config.options.host ? config.options.host : "mainnet";
+  constructor({ chains, options }: { chains?: Chain[]; options: Options }) {
+    super({ chains, options });
+    this.torusOptions = options;
+    const chainId = options.chainId ? options.chainId : 1;
+    const host = options.host ? options.host : "mainnet";
     this.torusInstance = new Torus({
-      buttonPosition: config.options.buttonPosition || "bottom-left",
+      buttonPosition: options.buttonPosition || "bottom-left",
+      modalZIndex: 9999999999999,
+      apiKey: options.apiKey,
+      buttonSize: options.buttonSize,
     });
 
     // set network according to chain details provided
@@ -57,88 +65,86 @@ export class TorusConnector extends Connector {
     }
   }
 
-  async connect(): Promise<Required<ConnectorData>> {
+  async connect({ chainId }: { chainId?: number } = {}): Promise<Required<ConnectorData>> {
     try {
       this.emit("message", {
         type: "connecting",
       });
 
-      if (!this.provider) {
-        // initialize torus embed
-        if (!this.torusInstance.isInitialized) {
-          await this.torusInstance.init({
-            ...this.torusOptions.TorusParams,
-            network: this.network,
-          });
-        } else if (this.torusOptions.TorusParams?.showTorusButton !== false) {
-          this.torusInstance.showTorusButton();
-        }
+      await this.getProvider();
 
-        document.getElementById("torusIframe").style.zIndex = "999999999999999999";
+      if (!this.torusInstance.isLoggedIn) {
         await this.torusInstance.login();
       }
 
-      const isLoggedIn = await this.isAuthorized();
+      this.provider.on("accountsChanged", this.onAccountsChanged);
+      this.provider.on("chainChanged", this.onChainChanged);
 
-      // if there is a user logged in, return the user
-      if (isLoggedIn) {
-        const provider = await this.getProvider();
+      const [account, connectedChainId] = await Promise.all([this.getAccount(), this.getChainId()]);
+      let unsupported = this.isChainUnsupported(connectedChainId);
+      let id = connectedChainId;
 
-        if (provider.on) {
-          provider.on("accountsChanged", this.onAccountsChanged);
-          provider.on("chainChanged", this.onChainChanged);
-        }
-
-        const chainId = await this.getChainId();
-
-        return {
-          provider,
-          chain: {
-            id: chainId,
-            unsupported: this.isChainUnsupported(chainId),
-          },
-          account: await this.getAccount(),
-        };
+      if (chainId && connectedChainId !== chainId) {
+        // try switching chain
+        const chain = await this.switchChain(chainId);
+        id = chain.id;
+        unsupported = this.isChainUnsupported(id);
       }
-      throw new Error("Failed to login, Please try again");
+
+      return {
+        account,
+        chain: {
+          id,
+          unsupported,
+        },
+      };
     } catch (error) {
       if (this.torusInstance.isInitialized) {
         this.torusInstance.hideTorusButton();
       }
       log.error("error while connecting", error);
-      throw new UserRejectedRequestError("Something went wrong");
+      this.onDisconnect();
+      throw new UserRejectedRequestError("Something went wrong" as unknown as Error);
     }
   }
 
-  async getAccount(): Promise<string> {
-    try {
-      const provider = new ethers.providers.Web3Provider(await this.getProvider());
-      const signer = provider.getSigner();
-      const account = await signer.getAddress();
-      return account;
-    } catch (error) {
-      log.error("Error: Cannot get account:", error);
-      throw error;
-    }
+  async getWalletClient({ chainId }: { chainId?: number } = {}): Promise<WalletClient> {
+    const [provider, account] = await Promise.all([this.getProvider(), this.getAccount()]);
+    const chain = this.chains.find((x) => x.id === chainId);
+    if (!provider) throw new Error("provider is required.");
+    return createWalletClient({
+      account,
+      chain,
+      transport: custom(provider),
+    });
+  }
+
+  async getAccount(): Promise<Address> {
+    const provider = await this.getProvider();
+    const accounts = await provider.request<string[]>({
+      method: "eth_accounts",
+    });
+    return getAddress(accounts[0]);
   }
 
   async getProvider() {
     if (this.provider) {
       return this.provider;
     }
+
+    // initialize torus embed
+    if (!this.torusInstance.isInitialized) {
+      await this.torusInstance.init({
+        ...this.torusOptions.TorusParams,
+        network: this.network,
+      });
+    }
+    if (this.torusOptions.TorusParams?.showTorusButton !== false) {
+      this.torusInstance.showTorusButton();
+    }
+
     this.provider = this.torusInstance.provider;
     return this.provider;
-  }
-
-  async getSigner(): Promise<Signer> {
-    try {
-      const provider = new ethers.providers.Web3Provider(await this.getProvider());
-      const signer = provider.getSigner();
-      return signer;
-    } catch (error) {
-      log.error("Error: Cannot get signer:", error);
-      throw error;
-    }
   }
 
   async isAuthorized() {
@@ -151,64 +157,54 @@ export class TorusConnector extends Connector {
   }
 
   async getChainId(): Promise<number> {
-    try {
-      const provider = await this.getProvider();
-      if (!provider && this.network.chainId) {
-        return normalizeChainId(this.network.chainId);
-      } else if (provider) {
-        const chainId = await provider.request({ method: "eth_chainId" });
-        if (chainId) {
-          return normalizeChainId(chainId as string);
-        }
-      }
-
-      throw new Error("Chain ID is not defined");
-    } catch (error) {
-      log.error("Error: Cannot get Chain Id from the network.", error);
-      throw error;
-    }
+    await this.getProvider();
+    const chainId = await this.provider.request<string>({ method: "eth_chainId" });
+    log.info("chainId", chainId);
+    return normalizeChainId(chainId);
   }
 
   async switchChain(chainId: number) {
     try {
       const chain = this.chains.find((x) => x.id === chainId);
-      if (!chain) throw new Error(`Unsupported chainId: ${chainId}`);
+      if (!chain) throw new SwitchChainError(new Error("chain not found on connector."));
       if (!this.isAuthorized()) throw new Error("Please login first");
       await this.torusInstance.setProvider({
-        host: chain.rpcUrls.default,
+        host: chain.rpcUrls.default.http[0],
         chainId,
         networkName: chain.name,
       });
       return chain;
     } catch (error) {
       log.error("Error: Cannot change chain", error);
-      throw error;
+      throw new SwitchChainError(error);
     }
   }
 
   async disconnect(): Promise<void> {
     await this.torusInstance.logout();
     this.torusInstance.hideTorusButton();
-    this.provider = null;
+    const provider = await this.getProvider();
+    provider.removeListener("accountsChanged", this.onAccountsChanged);
+    provider.removeListener("chainChanged", this.onChainChanged);
   }
+
+  protected onAccountsChanged = (accounts: string[]): void => {
+    if (accounts.length === 0) this.emit("disconnect");
+    else this.emit("change", { account: getAddress(accounts[0]) });
+  };
 
   protected isChainUnsupported(chainId: number): boolean {
     return !this.chains.some((x) => x.id === chainId);
   }
 
-  protected onAccountsChanged = (accounts: string[]): void => {
-    if (accounts.length === 0) {
-      this.emit("disconnect");
-    } else this.emit("change", { account: getAddress(accounts[0]) });
-  };
-
   protected onChainChanged = (chainId: string | number): void => {
     const id = normalizeChainId(chainId);
-    const unsupported = this.isChainUnsupported(id);
+    const unsupported = !this.chains.some((x) => x.id === id);
+    log.info("chainChanged", id, unsupported);
     this.emit("change", { chain: { id, unsupported } });
   };
 
-  protected onDisconnect = (): void => {
+  protected onDisconnect(): void {
     this.emit("disconnect");
-  };
+  }
 }
