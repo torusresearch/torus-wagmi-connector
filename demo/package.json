@@ -3,17 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@rainbow-me/rainbowkit": "0.7.4",
+    "@rainbow-me/rainbowkit": "1.0.4",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^14.4.3",
-    "ethers": "5.7.2",
+    "viem": "^1.2.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
-    "wagmi": "0.7.15",
+    "wagmi": "^1.3.2",
     "@toruslabs/torus-wagmi-connector": "file:../",
-    "web-vitals": "^3.0.4"
+    "web-vitals": "^3.1.1"
   },
   "devDependencies": {
     "assert": "^2.0.0",
@@ -28,6 +28,9 @@
     "stream-browserify": "^3.0.0",
     "stream-http": "^3.2.0",
     "url": "^0.11.0"
+  },
+  "overrides": {
+    "typescript": "^4.9.5"
   },
   "scripts": {
     "start": "react-app-rewired start",
