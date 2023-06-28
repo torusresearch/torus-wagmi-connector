@@ -9,7 +9,7 @@ const IS_SERVER = typeof window === "undefined";
 
 function normalizeChainId(chainId: string | number | bigint) {
   if (typeof chainId === "string") return Number.parseInt(chainId, chainId.trim().substring(0, 2) === "0x" ? 16 : 10);
-  if (typeof chainId === "bigint") return Number(chainId);
+  if (typeof chainId === "bigint") return Number(chainId.toString(10));
   return chainId;
 }
 
@@ -42,6 +42,9 @@ export class TorusConnector extends Connector {
     const host = options.host ? options.host : "mainnet";
     this.torusInstance = new Torus({
       buttonPosition: options.buttonPosition || "bottom-left",
+      modalZIndex: 9999999999999,
+      apiKey: options.apiKey,
+      buttonSize: options.buttonSize,
     });
 
     // set network according to chain details provided
@@ -100,6 +103,7 @@ export class TorusConnector extends Connector {
         this.torusInstance.hideTorusButton();
       }
       log.error("error while connecting", error);
+      this.onDisconnect();
       throw new UserRejectedRequestError("Something went wrong" as unknown as Error);
     }
   }
@@ -134,11 +138,10 @@ export class TorusConnector extends Connector {
         ...this.torusOptions.TorusParams,
         network: this.network,
       });
-    } else if (this.torusOptions.TorusParams?.showTorusButton !== false) {
+    }
+    if (this.torusOptions.TorusParams?.showTorusButton !== false) {
       this.torusInstance.showTorusButton();
     }
-
-    document.getElementById("torusIframe").style.zIndex = "999999999999999999";
 
     this.provider = this.torusInstance.provider;
     return this.provider;
@@ -185,21 +188,21 @@ export class TorusConnector extends Connector {
     provider.removeListener("chainChanged", this.onChainChanged);
   }
 
-  protected onAccountsChanged(accounts: string[]): void {
+  protected onAccountsChanged = (accounts: string[]): void => {
     if (accounts.length === 0) this.emit("disconnect");
     else this.emit("change", { account: getAddress(accounts[0]) });
-  }
+  };
 
   protected isChainUnsupported(chainId: number): boolean {
     return !this.chains.some((x) => x.id === chainId);
   }
 
-  protected onChainChanged(chainId: string | number): void {
+  protected onChainChanged = (chainId: string | number): void => {
     const id = normalizeChainId(chainId);
     const unsupported = this.isChainUnsupported(id);
     log.info("chainChanged", id, unsupported);
     this.emit("change", { chain: { id, unsupported } });
-  }
+  };
 
   protected onDisconnect(): void {
     this.emit("disconnect");
