@@ -196,7 +196,7 @@ export class TorusConnector extends Connector {
 
   protected onChainChanged(chainId: string | number): void {
     const id = normalizeChainId(chainId);
-    const unsupported = this.isChainUnsupported(id);
+    const unsupported = !this.chains.some((x) => x.id === id);
     log.info("chainChanged", id, unsupported);
     this.emit("change", { chain: { id, unsupported } });
   }
