@@ -174,9 +174,9 @@ export class TorusConnector extends Connector {
         networkName: chain.name,
       });
       return chain;
-    } catch (error) {
+    } catch (error: unknown) {
       log.error("Error: Cannot change chain", error);
-      throw new SwitchChainError(error);
+      throw new SwitchChainError(error as Error);
     }
   }
 

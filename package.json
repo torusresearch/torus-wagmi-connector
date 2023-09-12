@@ -19,37 +19,28 @@
     "pre-commit": "lint-staged --cwd ."
   },
   "dependencies": {
-    "@toruslabs/torus-embed": "^2.2.2",
+    "@toruslabs/torus-embed": "^3.0.0",
     "loglevel": "^1.8.1",
-    "viem": "^1.2.1"
+    "viem": "^1.10.9"
   },
   "devDependencies": {
-    "@toruslabs/eslint-config-typescript": "^2.0.0",
-    "@toruslabs/torus-scripts": "^4.0.0",
-    "@types/node": "^18",
-    "@typescript-eslint/eslint-plugin": "^5.60.1",
-    "@typescript-eslint/parser": "^5.60.1",
-    "@wagmi/core": "^1.3.2",
+    "@toruslabs/config": "^2.0.2",
+    "@toruslabs/eslint-config-typescript": "^3.0.1",
+    "@toruslabs/torus-scripts": "^5.0.5",
+    "@types/node": "^20",
+    "@wagmi/core": "^1.4.1",
     "changeset": "^0.2.6",
     "cross-env": "^7.0.3",
-    "eslint": "^8.43.0",
-    "eslint-plugin-eslint-comments": "^3.2.0",
-    "eslint-plugin-import": "^2.27.5",
-    "eslint-plugin-mocha": "^10.1.0",
-    "eslint-plugin-n": "^15.7.0",
-    "eslint-plugin-prettier": "^4.2.1",
-    "eslint-plugin-promise": "^6.1.1",
-    "eslint-plugin-simple-import-sort": "^10.0.0",
-    "eslint-plugin-tsdoc": "^0.2.17",
+    "eslint": "^8.49.0",
     "husky": "^8.0.3",
-    "lint-staged": "^13.2.3",
-    "prettier": "^2.8.8",
+    "lint-staged": "^14.0.1",
+    "prettier": "^3.0.3",
     "rimraf": "^5.0.1",
     "ts-node": "^10.9.1",
     "tsconfig-paths": "^4.2.0",
-    "tsconfig-paths-webpack-plugin": "^4.0.1",
-    "tslib": "^2.6.0",
-    "typescript": "^4.9.5"
+    "tsconfig-paths-webpack-plugin": "^4.1.0",
+    "tslib": "^2.6.2",
+    "typescript": "^5.2.2"
   },
   "peerDependencies": {
     "@wagmi/core": "^1.x"
@@ -67,11 +58,8 @@
   "publishConfig": {
     "access": "public"
   },
-  "overrides": {
-    "typescript": "^4.9.5"
-  },
   "engines": {
-    "node": ">=14.17.0",
-    "npm": ">=6.x"
+    "node": ">=18.x",
+    "npm": ">=9.x"
   }
 }
