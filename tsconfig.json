@@ -1,20 +1,5 @@
 {
-  "compilerOptions": {
-    "rootDir": ".",
-    "strict": false,
-    "module": "esnext",
-    "target": "ES2020",
-    "lib": ["ES2020", "DOM"],
-    "sourceMap": true,
-    "esModuleInterop": true,
-    "noImplicitThis": true,
-    "declaration": true,
-    "declarationDir": "./types",
-    "allowSyntheticDefaultImports": true,
-    "skipLibCheck": true,
-    "moduleResolution": "node",
-    "baseUrl": "."
-  },
+  "extends": "@toruslabs/config/tsconfig.default.json",
   "include": ["**/*.ts"],
   "exclude": ["node_modules/**", "dist/**"]
 }
