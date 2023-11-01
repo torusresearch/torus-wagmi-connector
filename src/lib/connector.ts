@@ -13,7 +13,7 @@ function normalizeChainId(chainId: string | number | bigint) {
   return chainId;
 }
 
-export class TorusConnector extends Connector {
+export class TorusConnector extends Connector<TorusInpageProvider, Options> {
   ready = !IS_SERVER;
 
   readonly id = "torus";

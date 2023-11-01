@@ -3,12 +3,19 @@
   "version": "3.0.0",
   "description": "wagmi connector to connect with Torus Wallet",
   "main": "dist/torusWagmiConnector.cjs.js",
-  "module": "dist/torusWagmiConnector.esm.js",
   "unpkg": "dist/torusWagmiConnector.umd.min.js",
   "jsdelivr": "dist/torusWagmiConnector.umd.min.js",
   "types": "dist/types/index.d.ts",
-  "repository": "",
+  "repository": "https://github.com/torusresearch/torus-wagmi-connector/",
   "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/torusWagmiConnector.esm.js",
+      "require": "./dist/torusWagmiConnector.cjs.js"
+    }
+  },
   "keywords": [],
   "scripts": {
     "dev": "torus-scripts start",
@@ -19,31 +26,31 @@
     "pre-commit": "lint-staged --cwd ."
   },
   "dependencies": {
-    "@toruslabs/torus-embed": "^3.0.0",
-    "loglevel": "^1.8.1",
-    "viem": "^1.10.9"
+    "@toruslabs/torus-embed": "^4.0.4",
+    "loglevel": "^1.8.1"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.26.2",
     "@toruslabs/config": "^2.0.2",
     "@toruslabs/eslint-config-typescript": "^3.0.1",
     "@toruslabs/torus-scripts": "^5.0.5",
     "@types/node": "^20",
-    "@wagmi/core": "^1.4.1",
+    "@wagmi/core": "^1.4.5",
     "changeset": "^0.2.6",
     "cross-env": "^7.0.3",
-    "eslint": "^8.49.0",
+    "eslint": "^8.52.0",
     "husky": "^8.0.3",
     "lint-staged": "^14.0.1",
     "prettier": "^3.0.3",
     "rimraf": "^5.0.1",
     "ts-node": "^10.9.1",
-    "tsconfig-paths": "^4.2.0",
-    "tsconfig-paths-webpack-plugin": "^4.1.0",
     "tslib": "^2.6.2",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "viem": "^1.18.2"
   },
   "peerDependencies": {
-    "@wagmi/core": "^1.x"
+    "@wagmi/core": "^1.x",
+    "viem": "^1.x"
   },
   "lint-staged": {
     "!(*d).ts": [

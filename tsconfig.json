@@ -1,5 +1,5 @@
 {
   "extends": "@toruslabs/config/tsconfig.default.json",
-  "include": ["**/*.ts"],
+  "include": ["src"],
   "exclude": ["node_modules/**", "dist/**"]
 }
